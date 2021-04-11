@@ -1,0 +1,33 @@
+import { Router } from "express";
+const router = Router();
+import facade from "../facades/DummyDB-Facade";
+import { ApiError } from "../errors/apiError";
+
+import authMiddleware from "../middleware/basic-auth";
+router.use(authMiddleware);
+
+router.get("/all", async (req: any, res) => {
+  const friends = await facade.getAllFriends();
+  const friendsDTO = friends.map((friend) => {
+    const { firstName, lastName } = friend;
+    return { firstName: firstName, lastName }; //Two ways, the silly way, and the easy way
+  });
+  res.json(friendsDTO);
+});
+
+router.get("/me", async (req: any, res, next) => {
+  const userId = req.credentials.userName;
+  try {
+    const friend = await facade.getFrind(userId);
+    if (friend == null) {
+      throw new ApiError("user not found", 404);
+    }
+    const { firstName, lastName, email } = friend;
+    const friendDTO = { firstName, lastName, email };
+    res.json(friendDTO);
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
